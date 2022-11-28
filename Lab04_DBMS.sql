@@ -158,20 +158,19 @@ select cus_name,cus_gender from customer where cus_name like "%a" or cus_name li
  DELIMITER &&
  CREATE PROCEDURE Review()
  BEGIN
- select Q.Supplier_id,S.supp_name as Supplier_Name,Q.Rating ,
+ select report.supp_id,report.supp_name, report.Average,
  case  
-        when rating=5 then "Excellentb service "
-        when rating=4 then "Good servie"
-        when rating>2 then "Average Service"
+        when report.average=5 then "Excellent service "
+        when report.average>=4 then "Good service"
+        when report.average>2 then "Average service"
         else "Poor service"
- end as Type_Of_Service
- from Supplier S 
- join
- (select p.pricing_id,s.supp_id as Supplier_Id,p.rat_ratstars as Rating from supplier_pricing s 
- join
-(select `order`.ord_id,rat_ratstars,pricing_id from rating,`order` where rating.ord_id=`order`.ord_id)
-as p on p.pricing_id=s.pricing_id)
-as Q on Q.Supplier_id=S.supp_id;
+ end as Type_Of_Service from
+ (select final.supp_id, supplier.supp_name, final.average from
+ (select test2.supp_id, sum(test2.rat_ratstars)/count(test2.rat_ratstars) as average from
+ (select supplier_pricing.supp_id, test.ord_id, test.rat_ratstars from supplier_pricing inner join
+ (select `order`.pricing_id, rating.ord_id, rating.rat_ratstars from `order` inner join rating on rating.ord_id=`order`.ord_id) as test on test.pricing_id=supplier_pricing.pricing_id)
+ as test2 group by supplier_pricing.supp_id)
+ as final inner join supplier where final.supp_id=supplier.supp_id) as report; 
 END &&
 DELIMITER ;
 CALL Review();
